@@ -914,7 +914,7 @@ injectIcons();
       const smalls = c.smalls || [];
       const bigCard = (p) => `
         <div class="big" data-pid="${p.id}">
-          <img src="${PIMG(p.img)}" alt="">
+          <img src="${PIMG(p.img)}" alt="" loading="eager" decoding="sync">
           <div class="price">${fmt(p.price)}</div>
           <div class="check-cont" onclick="toggleAsymCheck(event,this)">
             <div class="checkbox">${checkSvg}</div><span class="lbl">선택</span>
@@ -922,7 +922,7 @@ injectIcons();
         </div>`;
       const smCard = (p) => `
         <div class="small" data-pid="${p.id}">
-          <img src="${PIMG(p.img)}" alt="">
+          <img src="${PIMG(p.img)}" alt="" loading="eager" decoding="sync">
           <div class="price">${fmt(p.price)}</div>
           <div class="check-cont" onclick="toggleAsymCheck(event,this)">
             <div class="checkbox">${checkSvg}</div><span class="lbl">선택</span>
@@ -1294,6 +1294,30 @@ document.querySelectorAll('.filter-row').forEach(row => {
     idx = (idx + 1) % chips.length;
     setActive(idx);
   }, 2000);
+})();
+
+/* 모든 img eager 로딩 + 실패 감지 (모바일 webview에서 lazy 자동 적용 방지) */
+(function ensureImageLoading(){
+  const apply = (img) => {
+    if(!img.hasAttribute('loading')) img.setAttribute('loading','eager');
+    if(!img.hasAttribute('decoding')) img.setAttribute('decoding','sync');
+    if(!img.dataset.errBound){
+      img.dataset.errBound = '1';
+      img.addEventListener('error', () => {
+        console.warn('[img-load-failed]', img.src);
+        img.style.background = '#F5F5F5';
+      }, {once:true});
+    }
+  };
+  document.querySelectorAll('img').forEach(apply);
+  // 동적으로 추가된 img도 자동 적용
+  new MutationObserver(muts => {
+    muts.forEach(m => m.addedNodes.forEach(n => {
+      if(n.nodeType !== 1) return;
+      if(n.tagName === 'IMG') apply(n);
+      else n.querySelectorAll && n.querySelectorAll('img').forEach(apply);
+    }));
+  }).observe(document.body, {childList:true, subtree:true});
 })();
 
 /* Initial */
